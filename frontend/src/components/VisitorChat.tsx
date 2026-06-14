@@ -1,5 +1,5 @@
-import React, { useEffect, useRef, useCallback } from 'react';
-import { X, User, Clock, MessageCircle } from 'lucide-react';
+import React, { useEffect, useRef, useCallback, useState } from 'react';
+import { X, User, Clock, MessageCircle, PhoneOff } from 'lucide-react';
 import { useChatStore } from '../store/chatStore';
 import { emit, on, getSocket } from '../services/socket';
 import MessageBubble from './MessageBubble';
@@ -17,10 +17,11 @@ const VisitorChat: React.FC = () => {
   const assignedAdmin = useChatStore((state) => state.assignedAdmin);
   const showRatingCard = useChatStore((state) => state.showRatingCard);
   const pendingRatingSessionId = useChatStore((state) => state.pendingRatingSessionId);
-  const resetChat = useChatStore((state) => state.resetChat);
+  const startNewChat = useChatStore((state) => state.startNewChat);
+  const setSessionStatus = useChatStore((state) => state.setSessionStatus);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const initializedRef = useRef(false);
+  const [currentVisitorId, setCurrentVisitorId] = useState<string | null>(visitorId);
 
   const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -31,15 +32,14 @@ const VisitorChat: React.FC = () => {
   }, [messages, scrollToBottom]);
 
   useEffect(() => {
-    if (!visitorId || initializedRef.current) return;
-    initializedRef.current = true;
+    if (!currentVisitorId) return;
 
     const socket = getSocket();
     const store = useChatStore.getState();
 
     const handleConnect = () => {
       store.setIsConnected(true);
-      emit('visitor:connect', { visitorId });
+      emit('visitor:connect', { visitorId: currentVisitorId });
     };
 
     const handleDisconnect = () => {
@@ -120,28 +120,23 @@ const VisitorChat: React.FC = () => {
       unsubRatingSubmitted();
       unsubError();
     };
-  }, [visitorId]);
+  }, [currentVisitorId]);
 
   const handleSendMessage = (content: string) => {
     if (!session?.id) return;
     emit('visitor:message', { sessionId: session.id, content });
   };
 
-  const handleCloseChat = () => {
-    if (session?.id && sessionStatus !== 'ended') {
+  const handleEndSession = () => {
+    if (!session?.id || sessionStatus === 'ended') return;
+    if (confirm('确定要结束本次会话吗？')) {
       emit('visitor:close', { sessionId: session.id });
     }
-    resetChat();
-    if (visitorId) {
-      localStorage.removeItem('visitor_id');
-    }
-    window.location.reload();
   };
 
   const handleNewChat = () => {
-    resetChat();
-    localStorage.removeItem('visitor_id');
-    window.location.reload();
+    const newVisitorId = startNewChat();
+    setCurrentVisitorId(newVisitorId);
   };
 
   const handleRatingSubmit = (data: { sessionId: number; visitorId: string; score: RatingScore; feedback?: string }) => {
@@ -180,13 +175,16 @@ const VisitorChat: React.FC = () => {
             )}
           </div>
         </div>
-        <button
-          onClick={handleCloseChat}
-          className="p-2 hover:bg-white/20 rounded-lg transition-colors"
-          title="关闭对话"
-        >
-          <X size={20} />
-        </button>
+        {sessionStatus === 'active' && (
+          <button
+            onClick={handleEndSession}
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-white/20 hover:bg-white/30 rounded-lg transition-colors text-sm"
+            title="结束会话"
+          >
+            <PhoneOff size={16} />
+            结束会话
+          </button>
+        )}
       </div>
 
       {sessionStatus === 'waiting' && (

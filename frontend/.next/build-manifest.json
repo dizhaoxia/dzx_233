@@ -5,45 +5,45 @@
   "devFiles": [],
   "ampDevFiles": [],
   "lowPriorityFiles": [
-    "static/hz2Q8Tkw4VeLbSWkIB1sJ/_buildManifest.js",
-    "static/hz2Q8Tkw4VeLbSWkIB1sJ/_ssgManifest.js"
+    "static/HvHhprP9bYNheEJCfKJda/_buildManifest.js",
+    "static/HvHhprP9bYNheEJCfKJda/_ssgManifest.js"
   ],
   "rootMainFiles": [
-    "static/chunks/webpack-7fce5d4e84e85262.js",
+    "static/chunks/webpack-e78af16b1ed03b69.js",
     "static/chunks/fd9d1056-735d320b4b8745cb.js",
     "static/chunks/main-app-eb27f80bf3a7efe4.js"
   ],
   "pages": {
     "/": [
-      "static/chunks/webpack-7fce5d4e84e85262.js",
+      "static/chunks/webpack-e78af16b1ed03b69.js",
       "static/chunks/framework-afbcd7362d1dd7d2.js",
       "static/chunks/main-4fec5a2025ca0276.js",
       "static/chunks/40-c86ea3d7cfd58fae.js",
-      "static/chunks/pages/index-7b31a1f25afdef80.js"
+      "static/chunks/pages/index-9ca3d38f2f78f915.js"
     ],
     "/_app": [
-      "static/chunks/webpack-7fce5d4e84e85262.js",
+      "static/chunks/webpack-e78af16b1ed03b69.js",
       "static/chunks/framework-afbcd7362d1dd7d2.js",
       "static/chunks/main-4fec5a2025ca0276.js",
-      "static/css/71db6bc42ffacf5d.css",
-      "static/chunks/pages/_app-39506cf24033487a.js"
+      "static/css/ac40b70991366e40.css",
+      "static/chunks/pages/_app-73e139a507b98794.js"
     ],
     "/_error": [
-      "static/chunks/webpack-7fce5d4e84e85262.js",
+      "static/chunks/webpack-e78af16b1ed03b69.js",
       "static/chunks/framework-afbcd7362d1dd7d2.js",
       "static/chunks/main-4fec5a2025ca0276.js",
       "static/chunks/pages/_error-228a1c6c96ec611b.js"
     ],
     "/admin/dashboard": [
-      "static/chunks/webpack-7fce5d4e84e85262.js",
+      "static/chunks/webpack-e78af16b1ed03b69.js",
       "static/chunks/framework-afbcd7362d1dd7d2.js",
       "static/chunks/main-4fec5a2025ca0276.js",
       "static/chunks/40-c86ea3d7cfd58fae.js",
       "static/chunks/206-af2a271c6ddde12b.js",
-      "static/chunks/pages/admin/dashboard-e7337c56003e3305.js"
+      "static/chunks/pages/admin/dashboard-4fe2ce2aeb37f8df.js"
     ],
     "/admin/login": [
-      "static/chunks/webpack-7fce5d4e84e85262.js",
+      "static/chunks/webpack-e78af16b1ed03b69.js",
       "static/chunks/framework-afbcd7362d1dd7d2.js",
       "static/chunks/main-4fec5a2025ca0276.js",
       "static/chunks/40-c86ea3d7cfd58fae.js",

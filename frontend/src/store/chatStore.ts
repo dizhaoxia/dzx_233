@@ -25,18 +25,21 @@ interface ChatState {
   setPendingRatingSessionId: (sessionId: number | null) => void;
   setCurrentRating: (rating: Rating | null) => void;
   resetChat: () => void;
+  startNewChat: () => string;
 }
 
 const generateVisitorId = (): string => {
-  const stored = localStorage.getItem('visitor_id');
-  if (stored) return stored;
   const newId = `visitor_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
   localStorage.setItem('visitor_id', newId);
   return newId;
 };
 
+const getStoredVisitorId = (): string | null => {
+  return localStorage.getItem('visitor_id');
+};
+
 export const useChatStore = create<ChatState>((set, get) => ({
-  visitorId: typeof window !== 'undefined' ? generateVisitorId() : null,
+  visitorId: typeof window !== 'undefined' ? (getStoredVisitorId() || generateVisitorId()) : null,
   session: null,
   messages: [],
   queuePosition: null,
@@ -80,4 +83,20 @@ export const useChatStore = create<ChatState>((set, get) => ({
       pendingRatingSessionId: null,
       currentRating: null,
     }),
+  startNewChat: () => {
+    const newVisitorId = generateVisitorId();
+    set({
+      visitorId: newVisitorId,
+      session: null,
+      messages: [],
+      queuePosition: null,
+      sessionStatus: null,
+      assignedAdmin: null,
+      isConnected: false,
+      showRatingCard: false,
+      pendingRatingSessionId: null,
+      currentRating: null,
+    });
+    return newVisitorId;
+  },
 }));
