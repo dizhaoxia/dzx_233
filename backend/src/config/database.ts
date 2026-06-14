@@ -82,6 +82,40 @@ const initTables = async () => {
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
     `);
 
+    await connection.execute(`
+      CREATE TABLE IF NOT EXISTS quick_replies (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        admin_id INT NOT NULL,
+        title VARCHAR(100) NOT NULL,
+        content TEXT NOT NULL,
+        category ENUM('greeting', 'faq', 'closing', 'custom') DEFAULT 'custom',
+        sort_order INT DEFAULT 0,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        INDEX idx_admin_id (admin_id),
+        INDEX idx_category (category),
+        FOREIGN KEY (admin_id) REFERENCES admins(id) ON DELETE CASCADE
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+    `);
+
+    await connection.execute(`
+      CREATE TABLE IF NOT EXISTS ratings (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        session_id INT NOT NULL UNIQUE,
+        admin_id INT NULL,
+        visitor_id VARCHAR(100) NOT NULL,
+        score ENUM('satisfied', 'neutral', 'dissatisfied') NOT NULL,
+        feedback TEXT NULL,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        INDEX idx_session_id (session_id),
+        INDEX idx_admin_id (admin_id),
+        INDEX idx_score (score),
+        INDEX idx_created_at (created_at),
+        FOREIGN KEY (session_id) REFERENCES sessions(id) ON DELETE CASCADE,
+        FOREIGN KEY (admin_id) REFERENCES admins(id) ON DELETE SET NULL
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+    `);
+
     const hashedPassword = bcrypt.hashSync('123456', 10);
     await connection.execute(
       'INSERT IGNORE INTO admins (username, password) VALUES (?, ?)',

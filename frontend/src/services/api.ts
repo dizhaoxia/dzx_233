@@ -6,6 +6,10 @@ import type {
   SessionWithMessages,
   VisitorHistory,
   AdminStatus,
+  QuickReply,
+  Rating,
+  AdminRatingStats,
+  QuickReplyCategory,
 } from '../types';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3202';
@@ -89,6 +93,69 @@ export const messageAPI = {
     senderType: 'visitor' | 'admin'
   ): Promise<{ message: string }> => {
     const response = await api.post(`/api/messages/${sessionId}/read`, { senderType });
+    return response.data;
+  },
+};
+
+export const quickReplyAPI = {
+  getQuickReplies: async (): Promise<QuickReply[]> => {
+    const response = await api.get('/api/quick-replies');
+    return response.data;
+  },
+
+  createQuickReply: async (data: {
+    title: string;
+    content: string;
+    category: QuickReplyCategory;
+  }): Promise<QuickReply> => {
+    const response = await api.post('/api/quick-replies', data);
+    return response.data;
+  },
+
+  updateQuickReply: async (
+    id: number,
+    data: { title: string; content: string; category: QuickReplyCategory }
+  ): Promise<QuickReply> => {
+    const response = await api.put(`/api/quick-replies/${id}`, data);
+    return response.data;
+  },
+
+  deleteQuickReply: async (id: number): Promise<{ message: string }> => {
+    const response = await api.delete(`/api/quick-replies/${id}`);
+    return response.data;
+  },
+
+  updateSortOrder: async (items: { id: number; sortOrder: number }[]): Promise<{ message: string }> => {
+    const response = await api.put('/api/quick-replies/sort-order', { items });
+    return response.data;
+  },
+};
+
+export const ratingAPI = {
+  getRatings: async (limit?: number): Promise<Rating[]> => {
+    const params = limit ? { limit } : {};
+    const response = await api.get('/api/ratings', { params });
+    return response.data;
+  },
+
+  getRatingBySessionId: async (sessionId: number): Promise<Rating> => {
+    const response = await api.get(`/api/ratings/session/${sessionId}`);
+    return response.data;
+  },
+
+  createRating: async (data: {
+    sessionId: number;
+    visitorId: string;
+    score: string;
+    feedback?: string;
+  }): Promise<Rating> => {
+    const response = await api.post('/api/ratings', data);
+    return response.data;
+  },
+
+  getAdminStats: async (startDate?: string, endDate?: string): Promise<AdminRatingStats> => {
+    const params = { startDate, endDate };
+    const response = await api.get('/api/ratings/stats', { params });
     return response.data;
   },
 };

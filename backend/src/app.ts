@@ -3,6 +3,8 @@ import cors from 'cors';
 import authRoutes from './routes/authRoutes.js';
 import sessionRoutes from './routes/sessionRoutes.js';
 import messageRoutes from './routes/messageRoutes.js';
+import quickReplyRoutes from './routes/quickReplyRoutes.js';
+import ratingRoutes from './routes/ratingRoutes.js';
 
 const app = express();
 
@@ -16,6 +18,8 @@ app.get('/health', (req, res) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/sessions', sessionRoutes);
 app.use('/api/messages', messageRoutes);
+app.use('/api/quick-replies', quickReplyRoutes);
+app.use('/api/ratings', ratingRoutes);
 
 app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
   console.error(err.stack);

@@ -4,7 +4,9 @@ import { useChatStore } from '../store/chatStore';
 import { emit, on, getSocket } from '../services/socket';
 import MessageBubble from './MessageBubble';
 import ChatInput from './ChatInput';
+import RatingCard from './RatingCard';
 import { getStatusText } from '../utils/format';
+import type { RatingScore } from '../types';
 
 const VisitorChat: React.FC = () => {
   const visitorId = useChatStore((state) => state.visitorId);
@@ -13,6 +15,8 @@ const VisitorChat: React.FC = () => {
   const queuePosition = useChatStore((state) => state.queuePosition);
   const sessionStatus = useChatStore((state) => state.sessionStatus);
   const assignedAdmin = useChatStore((state) => state.assignedAdmin);
+  const showRatingCard = useChatStore((state) => state.showRatingCard);
+  const pendingRatingSessionId = useChatStore((state) => state.pendingRatingSessionId);
   const resetChat = useChatStore((state) => state.resetChat);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -74,6 +78,19 @@ const VisitorChat: React.FC = () => {
       }
     };
 
+    const handleRatingRequest = ({ sessionId }: { sessionId: number }) => {
+      const currentSession = useChatStore.getState().session;
+      if (currentSession?.id === sessionId) {
+        store.setShowRatingCard(true);
+        store.setPendingRatingSessionId(sessionId);
+      }
+    };
+
+    const handleRatingSubmitted = () => {
+      store.setShowRatingCard(false);
+      store.setPendingRatingSessionId(null);
+    };
+
     const handleError = ({ message }: { message: string }) => {
       console.error('Socket error:', message);
     };
@@ -88,6 +105,8 @@ const VisitorChat: React.FC = () => {
     const unsubAssigned = on('session:assigned', handleSessionAssigned);
     const unsubMessage = on('message:new', handleMessageNew);
     const unsubEnded = on('session:ended', handleSessionEnded);
+    const unsubRatingRequest = on('rating:request', handleRatingRequest);
+    const unsubRatingSubmitted = on('rating:submitted', handleRatingSubmitted);
     const unsubError = on('error', handleError);
 
     return () => {
@@ -97,6 +116,8 @@ const VisitorChat: React.FC = () => {
       unsubAssigned();
       unsubMessage();
       unsubEnded();
+      unsubRatingRequest();
+      unsubRatingSubmitted();
       unsubError();
     };
   }, [visitorId]);
@@ -121,6 +142,16 @@ const VisitorChat: React.FC = () => {
     resetChat();
     localStorage.removeItem('visitor_id');
     window.location.reload();
+  };
+
+  const handleRatingSubmit = (data: { sessionId: number; visitorId: string; score: RatingScore; feedback?: string }) => {
+    emit('rating:submit', data);
+  };
+
+  const handleRatingDismiss = () => {
+    const store = useChatStore.getState();
+    store.setShowRatingCard(false);
+    store.setPendingRatingSessionId(null);
   };
 
   return (
@@ -186,7 +217,16 @@ const VisitorChat: React.FC = () => {
             <div ref={messagesEndRef} />
           </div>
 
-          {sessionStatus === 'ended' ? (
+          {showRatingCard && pendingRatingSessionId && visitorId ? (
+            <div className="p-4 bg-gray-50 border-t border-gray-200">
+              <RatingCard
+                sessionId={pendingRatingSessionId}
+                visitorId={visitorId}
+                onSubmit={handleRatingSubmit}
+                onDismiss={handleRatingDismiss}
+              />
+            </div>
+          ) : sessionStatus === 'ended' ? (
             <div className="p-4 bg-gray-100 border-t border-gray-200">
               <p className="text-center text-gray-500 mb-3">本次会话已结束</p>
               <button onClick={handleNewChat} className="w-full btn-primary">

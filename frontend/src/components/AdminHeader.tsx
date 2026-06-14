@@ -1,6 +1,6 @@
 import React from 'react';
 import { useRouter } from 'next/router';
-import { LogOut, User, Search, MessageSquare } from 'lucide-react';
+import { LogOut, User, Search, MessageSquare, Zap, BarChart3 } from 'lucide-react';
 import { useAuthStore } from '../store/authStore';
 import { useAdminStore } from '../store/adminStore';
 import { authAPI } from '../services/api';
@@ -17,7 +17,7 @@ const statusOptions: { value: AdminStatus; label: string; color: string }[] = [
 const AdminHeader: React.FC = () => {
   const router = useRouter();
   const { admin, logout, updateStatus } = useAuthStore();
-  const { setSearchVisitorId, resetAdminStore } = useAdminStore();
+  const { setSearchVisitorId, resetAdminStore, showQuickReplyPanel, showStatsPanel, setShowQuickReplyPanel, setShowStatsPanel } = useAdminStore();
 
   const handleStatusChange = async (status: AdminStatus) => {
     try {
@@ -72,6 +72,31 @@ const AdminHeader: React.FC = () => {
             onChange={handleSearch}
             className="pl-10 pr-4 py-2 w-64 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent text-sm"
           />
+        </div>
+
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setShowQuickReplyPanel(!showQuickReplyPanel)}
+            className={`p-2 rounded-lg transition-colors ${
+              showQuickReplyPanel
+                ? 'bg-primary-100 text-primary-600'
+                : 'hover:bg-gray-100 text-gray-600'
+            }`}
+            title="快捷回复"
+          >
+            <Zap size={20} />
+          </button>
+          <button
+            onClick={() => setShowStatsPanel(!showStatsPanel)}
+            className={`p-2 rounded-lg transition-colors ${
+              showStatsPanel
+                ? 'bg-primary-100 text-primary-600'
+                : 'hover:bg-gray-100 text-gray-600'
+            }`}
+            title="满意度统计"
+          >
+            <BarChart3 size={20} />
+          </button>
         </div>
 
         <div className="flex items-center gap-3">

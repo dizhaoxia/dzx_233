@@ -4,9 +4,10 @@ import type { Express } from 'express';
 import * as SessionModel from '../models/Session.js';
 import * as MessageModel from '../models/Message.js';
 import * as AdminModel from '../models/Admin.js';
+import * as RatingModel from '../models/Rating.js';
 import { assignSession, processWaitingSessions } from '../services/assignmentService.js';
 import { addToQueue, removeFromQueue, getQueuePosition, syncQueueFromDB } from '../services/queueService.js';
-import type { SocketData, AdminStatus, SenderType } from '../types/index.js';
+import type { SocketData, AdminStatus, SenderType, RatingScore, Rating } from '../types/index.js';
 
 interface ServerToClientEvents {
   'session:queued': (data: { position: number }) => void;
@@ -19,6 +20,8 @@ interface ServerToClientEvents {
   'admin:online': (data: { adminId: number }) => void;
   'admin:status': (data: { adminId: number; status: AdminStatus }) => void;
   'typing': (data: { sessionId: number; sender: string }) => void;
+  'rating:request': (data: { sessionId: number }) => void;
+  'rating:submitted': (data: { rating: Rating }) => void;
   'error': (data: { message: string }) => void;
 }
 
@@ -35,6 +38,7 @@ interface ClientToServerEvents {
   'typing': (data: { sessionId: number; sender: string }) => void;
   'message:read': (data: { sessionId: number; senderType: SenderType }) => void;
   'queue:refresh': (data: { sessionId: number }) => void;
+  'rating:submit': (data: { sessionId: number; visitorId: string; score: RatingScore; feedback?: string }) => void;
 }
 
 export const setupSocket = (expressServer: Express): { io: SocketIOServer; httpServer: any } => {
@@ -115,6 +119,7 @@ export const setupSocket = (expressServer: Express): { io: SocketIOServer; httpS
         
         if (session?.visitorId) {
           io.to(`visitor:${session.visitorId}`).emit('session:ended', { sessionId });
+          io.to(`visitor:${session.visitorId}`).emit('rating:request', { sessionId });
         }
         if (session?.adminId) {
           io.to(`admin:${session.adminId}`).emit('session:ended', { sessionId });
@@ -199,6 +204,7 @@ export const setupSocket = (expressServer: Express): { io: SocketIOServer; httpS
         
         if (session?.visitorId) {
           io.to(`visitor:${session.visitorId}`).emit('session:ended', { sessionId });
+          io.to(`visitor:${session.visitorId}`).emit('rating:request', { sessionId });
         }
         if (session?.adminId) {
           io.to(`admin:${session.adminId}`).emit('session:ended', { sessionId });
@@ -228,6 +234,51 @@ export const setupSocket = (expressServer: Express): { io: SocketIOServer; httpS
       const { sessionId } = data;
       const position = getQueuePosition(sessionId);
       socket.emit('session:queued', { position });
+    });
+
+    socket.on('rating:submit', async (data) => {
+      try {
+        const { sessionId, visitorId, score, feedback } = data;
+
+        if (!sessionId || !visitorId || !score) {
+          socket.emit('error', { message: '参数不完整' });
+          return;
+        }
+
+        const validScores: RatingScore[] = ['satisfied', 'neutral', 'dissatisfied'];
+        if (!validScores.includes(score)) {
+          socket.emit('error', { message: '无效的评价分数' });
+          return;
+        }
+
+        const existing = await RatingModel.findBySessionId(sessionId);
+        if (existing) {
+          socket.emit('error', { message: '该会话已评价' });
+          return;
+        }
+
+        const session = await SessionModel.findById(sessionId);
+        if (!session) {
+          socket.emit('error', { message: '会话不存在' });
+          return;
+        }
+
+        const rating = await RatingModel.create(
+          sessionId,
+          session.adminId,
+          visitorId,
+          score,
+          feedback
+        );
+
+        io.to(`visitor:${visitorId}`).emit('rating:submitted', { rating });
+        if (session.adminId) {
+          io.to(`admin:${session.adminId}`).emit('rating:submitted', { rating });
+        }
+      } catch (error) {
+        console.error('Rating submit error:', error);
+        socket.emit('error', { message: '提交评价失败' });
+      }
     });
 
     socket.on('disconnect', () => {

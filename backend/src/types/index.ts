@@ -4,6 +4,10 @@ export type SessionStatus = 'waiting' | 'active' | 'ended';
 
 export type SenderType = 'visitor' | 'admin';
 
+export type QuickReplyCategory = 'greeting' | 'faq' | 'closing' | 'custom';
+
+export type RatingScore = 'satisfied' | 'neutral' | 'dissatisfied';
+
 export interface Admin {
   id: number;
   username: string;
@@ -40,6 +44,37 @@ export interface QueueItem {
   sessionId: number;
   visitorId: string;
   createdAt: Date;
+}
+
+export interface QuickReply {
+  id: number;
+  adminId: number;
+  title: string;
+  content: string;
+  category: QuickReplyCategory;
+  sortOrder: number;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface Rating {
+  id: number;
+  sessionId: number;
+  adminId: number | null;
+  visitorId: string;
+  score: RatingScore;
+  feedback: string | null;
+  createdAt: Date;
+}
+
+export interface AdminRatingStats {
+  adminId: number;
+  totalSessions: number;
+  ratedSessions: number;
+  satisfiedCount: number;
+  neutralCount: number;
+  dissatisfiedCount: number;
+  satisfactionRate: number;
 }
 
 export interface SocketData {

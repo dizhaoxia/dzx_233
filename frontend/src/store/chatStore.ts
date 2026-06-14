@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { Session, Message, Admin, SessionStatus } from '../types';
+import type { Session, Message, Admin, SessionStatus, Rating, RatingScore } from '../types';
 
 interface ChatState {
   visitorId: string | null;
@@ -9,6 +9,9 @@ interface ChatState {
   sessionStatus: SessionStatus | null;
   assignedAdmin: Admin | null;
   isConnected: boolean;
+  showRatingCard: boolean;
+  pendingRatingSessionId: number | null;
+  currentRating: Rating | null;
   setVisitorId: (visitorId: string) => void;
   setSession: (session: Session | null) => void;
   setMessages: (messages: Message[]) => void;
@@ -18,6 +21,9 @@ interface ChatState {
   setAssignedAdmin: (admin: Admin | null) => void;
   setIsConnected: (connected: boolean) => void;
   markMessagesAsRead: () => void;
+  setShowRatingCard: (show: boolean) => void;
+  setPendingRatingSessionId: (sessionId: number | null) => void;
+  setCurrentRating: (rating: Rating | null) => void;
   resetChat: () => void;
 }
 
@@ -37,6 +43,9 @@ export const useChatStore = create<ChatState>((set, get) => ({
   sessionStatus: null,
   assignedAdmin: null,
   isConnected: false,
+  showRatingCard: false,
+  pendingRatingSessionId: null,
+  currentRating: null,
   setVisitorId: (visitorId) => set({ visitorId }),
   setSession: (session) => set({ session }),
   setMessages: (messages) => set({ messages }),
@@ -56,6 +65,9 @@ export const useChatStore = create<ChatState>((set, get) => ({
     set((state) => ({
       messages: state.messages.map((m) => ({ ...m, isRead: true })),
     })),
+  setShowRatingCard: (show) => set({ showRatingCard: show }),
+  setPendingRatingSessionId: (sessionId) => set({ pendingRatingSessionId: sessionId }),
+  setCurrentRating: (rating) => set({ currentRating: rating }),
   resetChat: () =>
     set({
       session: null,
@@ -64,5 +76,8 @@ export const useChatStore = create<ChatState>((set, get) => ({
       sessionStatus: null,
       assignedAdmin: null,
       isConnected: false,
+      showRatingCard: false,
+      pendingRatingSessionId: null,
+      currentRating: null,
     }),
 }));

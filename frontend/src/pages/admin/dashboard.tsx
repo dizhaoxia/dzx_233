@@ -2,16 +2,17 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import { useAuthStore } from '../../store/authStore';
 import { useAdminStore } from '../../store/adminStore';
-import { getSocket, emit } from '../../services/socket';
+import { getSocket, emit, on } from '../../services/socket';
 import AdminHeader from '../../components/AdminHeader';
 import SessionList from '../../components/SessionList';
 import ChatWindow from '../../components/ChatWindow';
-import type { Session } from '../../types';
+import RatingStatsPanel from '../../components/RatingStatsPanel';
+import type { Session, Rating } from '../../types';
 
 const DashboardPage: React.FC = () => {
   const router = useRouter();
   const { isAuthenticated, admin } = useAuthStore();
-  const { activeSessionId, sessions } = useAdminStore();
+  const { activeSessionId, sessions, showStatsPanel, addRating } = useAdminStore();
   const [selectedSession, setSelectedSession] = useState<Session | null>(null);
 
   useEffect(() => {
@@ -38,6 +39,17 @@ const DashboardPage: React.FC = () => {
     setSelectedSession(session || null);
   }, [activeSessionId, sessions]);
 
+  useEffect(() => {
+    const handleRatingSubmitted = ({ rating }: { rating: Rating }) => {
+      addRating(rating);
+    };
+
+    const unsubRating = on('rating:submitted', handleRatingSubmitted);
+    return () => {
+      unsubRating();
+    };
+  }, []);
+
   if (!isAuthenticated) {
     return (
       <div className="h-screen flex items-center justify-center bg-gray-50">
@@ -52,6 +64,11 @@ const DashboardPage: React.FC = () => {
       <div className="flex-1 flex overflow-hidden">
         <SessionList onSelectSession={setSelectedSession} />
         <ChatWindow session={selectedSession} />
+        {showStatsPanel && (
+          <div className="w-80 border-l border-gray-200 flex-shrink-0">
+            <RatingStatsPanel />
+          </div>
+        )}
       </div>
     </div>
   );
