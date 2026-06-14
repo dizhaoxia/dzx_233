@@ -36,7 +36,7 @@ export const useAdminStore = create<AdminState>((set) => ({
       if (exists) {
         return {
           sessions: state.sessions.map((s) =>
-            s.id === session.id ? { ...session, unreadCount: (session.unreadCount || 0) + (s.unreadCount || 0) } : s
+            s.id === session.id ? { ...session, unreadCount: s.unreadCount || 0 } : s
           ),
         };
       }
@@ -56,9 +56,13 @@ export const useAdminStore = create<AdminState>((set) => ({
   setActiveSessionId: (id) => set({ activeSessionId: id }),
   setActiveSessionMessages: (messages) => set({ activeSessionMessages: messages }),
   addMessageToActiveSession: (message) =>
-    set((state) => ({
-      activeSessionMessages: [...state.activeSessionMessages, message],
-    })),
+    set((state) => {
+      const exists = state.activeSessionMessages.some((m) => m.id === message.id);
+      if (exists) return state;
+      return {
+        activeSessionMessages: [...state.activeSessionMessages, message],
+      };
+    }),
   markSessionAsRead: (sessionId) =>
     set((state) => ({
       sessions: state.sessions.map((s) =>

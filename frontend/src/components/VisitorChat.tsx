@@ -7,24 +7,16 @@ import ChatInput from './ChatInput';
 import { getStatusText } from '../utils/format';
 
 const VisitorChat: React.FC = () => {
-  const {
-    visitorId,
-    session,
-    messages,
-    queuePosition,
-    sessionStatus,
-    assignedAdmin,
-    setSession,
-    setMessages,
-    addMessage,
-    setQueuePosition,
-    setSessionStatus,
-    setAssignedAdmin,
-    setIsConnected,
-    resetChat,
-  } = useChatStore();
+  const visitorId = useChatStore((state) => state.visitorId);
+  const session = useChatStore((state) => state.session);
+  const messages = useChatStore((state) => state.messages);
+  const queuePosition = useChatStore((state) => state.queuePosition);
+  const sessionStatus = useChatStore((state) => state.sessionStatus);
+  const assignedAdmin = useChatStore((state) => state.assignedAdmin);
+  const resetChat = useChatStore((state) => state.resetChat);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const initializedRef = useRef(false);
 
   const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -35,22 +27,24 @@ const VisitorChat: React.FC = () => {
   }, [messages, scrollToBottom]);
 
   useEffect(() => {
-    if (!visitorId) return;
+    if (!visitorId || initializedRef.current) return;
+    initializedRef.current = true;
 
     const socket = getSocket();
+    const store = useChatStore.getState();
 
     const handleConnect = () => {
-      setIsConnected(true);
+      store.setIsConnected(true);
       emit('visitor:connect', { visitorId });
     };
 
     const handleDisconnect = () => {
-      setIsConnected(false);
+      store.setIsConnected(false);
     };
 
     const handleSessionQueued = ({ position }: { position: number }) => {
-      setQueuePosition(position);
-      setSessionStatus('waiting');
+      store.setQueuePosition(position);
+      store.setSessionStatus('waiting');
     };
 
     const handleSessionAssigned = (data: {
@@ -58,24 +52,25 @@ const VisitorChat: React.FC = () => {
       admin?: any;
       messages?: any[];
     }) => {
-      setSession(data.session);
-      setSessionStatus(data.session.status);
-      setQueuePosition(null);
+      store.setSession(data.session);
+      store.setSessionStatus(data.session.status);
+      store.setQueuePosition(null);
       if (data.admin) {
-        setAssignedAdmin(data.admin);
+        store.setAssignedAdmin(data.admin);
       }
       if (data.messages) {
-        setMessages(data.messages);
+        store.setMessages(data.messages);
       }
     };
 
     const handleMessageNew = ({ message }: { message: any }) => {
-      addMessage(message);
+      store.addMessage(message);
     };
 
     const handleSessionEnded = ({ sessionId }: { sessionId: number }) => {
-      if (session?.id === sessionId) {
-        setSessionStatus('ended');
+      const currentSession = useChatStore.getState().session;
+      if (currentSession?.id === sessionId) {
+        store.setSessionStatus('ended');
       }
     };
 
@@ -104,7 +99,7 @@ const VisitorChat: React.FC = () => {
       unsubEnded();
       unsubError();
     };
-  }, [visitorId, session?.id, setSession, setMessages, addMessage, setQueuePosition, setSessionStatus, setAssignedAdmin, setIsConnected]);
+  }, [visitorId]);
 
   const handleSendMessage = (content: string) => {
     if (!session?.id) return;

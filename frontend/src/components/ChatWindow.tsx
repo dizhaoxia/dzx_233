@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useCallback } from 'react';
-import { User, X, MessageCircle, UserCog } from 'lucide-react';
+import { User, X, MessageCircle } from 'lucide-react';
 import { useAdminStore } from '../store/adminStore';
 import { emit, on } from '../services/socket';
 import { messageAPI } from '../services/api';
@@ -13,14 +13,11 @@ interface ChatWindowProps {
 }
 
 const ChatWindow: React.FC<ChatWindowProps> = ({ session }) => {
-  const {
-    activeSessionMessages,
-    addMessageToActiveSession,
-    markSessionAsRead,
-    removeSession,
-  } = useAdminStore();
+  const activeSessionMessages = useAdminStore((state) => state.activeSessionMessages);
+  const activeSessionId = useAdminStore((state) => state.activeSessionId);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const initializedRef = useRef(false);
 
   const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -31,19 +28,27 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ session }) => {
   }, [activeSessionMessages, scrollToBottom]);
 
   useEffect(() => {
+    if (initializedRef.current) return;
+    initializedRef.current = true;
+
+    const store = useAdminStore.getState();
+
     const handleMessageNew = ({ message }: { message: Message }) => {
-      if (session && message.sessionId === session.id) {
-        addMessageToActiveSession(message);
+      const currentState = useAdminStore.getState();
+      if (currentState.activeSessionId && message.sessionId === currentState.activeSessionId) {
+        store.addMessageToActiveSession(message);
         if (message.senderType === 'visitor') {
-          emit('message:read', { sessionId: session.id, senderType: 'visitor' });
-          messageAPI.markAsRead(session.id, 'visitor').catch(console.error);
+          store.markSessionAsRead(currentState.activeSessionId);
+          emit('message:read', { sessionId: currentState.activeSessionId, senderType: 'visitor' });
+          messageAPI.markAsRead(currentState.activeSessionId, 'visitor').catch(console.error);
         }
       }
     };
 
     const handleSessionEnded = ({ sessionId }: { sessionId: number }) => {
-      if (session && session.id === sessionId) {
-        removeSession(sessionId);
+      const currentState = useAdminStore.getState();
+      if (currentState.activeSessionId === sessionId) {
+        store.removeSession(sessionId);
       }
     };
 
@@ -54,15 +59,16 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ session }) => {
       unsubMessage();
       unsubEnded();
     };
-  }, [session, addMessageToActiveSession, removeSession]);
+  }, []);
 
   useEffect(() => {
-    if (session && session.status === 'active') {
-      markSessionAsRead(session.id);
+    if (session && session.status === 'active' && session.id === activeSessionId) {
+      const store = useAdminStore.getState();
+      store.markSessionAsRead(session.id);
       messageAPI.markAsRead(session.id, 'visitor').catch(console.error);
       emit('message:read', { sessionId: session.id, senderType: 'visitor' });
     }
-  }, [session?.id, session?.status, markSessionAsRead]);
+  }, [session?.id, session?.status, activeSessionId]);
 
   const handleSendMessage = (content: string) => {
     if (!session?.id) return;

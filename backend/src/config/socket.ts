@@ -13,6 +13,7 @@ interface ServerToClientEvents {
   'session:assigned': (data: { session: any; admin?: any; messages?: any[] }) => void;
   'session:new': (data: { session: any }) => void;
   'session:ended': (data: { sessionId: number }) => void;
+  'session:updated': (data: { sessionId: number; message: any }) => void;
   'message:new': (data: { message: any }) => void;
   'message:read': (data: { sessionId: number; senderType: SenderType }) => void;
   'admin:online': (data: { adminId: number }) => void;
@@ -96,13 +97,8 @@ export const setupSocket = (expressServer: Express): { io: SocketIOServer; httpS
         if (!content?.trim()) return;
 
         const message = await MessageModel.create(sessionId, 'visitor', content.trim());
-        const session = await SessionModel.findById(sessionId);
 
         io.to(`session:${sessionId}`).emit('message:new', { message });
-
-        if (session?.adminId) {
-          io.to(`admin:${session.adminId}`).emit('message:new', { message });
-        }
       } catch (error) {
         console.error('Visitor message error:', error);
         socket.emit('error', { message: '发送消息失败' });
@@ -117,8 +113,9 @@ export const setupSocket = (expressServer: Express): { io: SocketIOServer; httpS
         
         const session = await SessionModel.findById(sessionId);
         
-        io.to(`session:${sessionId}`).emit('session:ended', { sessionId });
-        
+        if (session?.visitorId) {
+          io.to(`visitor:${session.visitorId}`).emit('session:ended', { sessionId });
+        }
         if (session?.adminId) {
           io.to(`admin:${session.adminId}`).emit('session:ended', { sessionId });
         }
@@ -179,13 +176,8 @@ export const setupSocket = (expressServer: Express): { io: SocketIOServer; httpS
         if (!content?.trim()) return;
 
         const message = await MessageModel.create(sessionId, 'admin', content.trim());
-        const session = await SessionModel.findById(sessionId);
 
         io.to(`session:${sessionId}`).emit('message:new', { message });
-        
-        if (session?.visitorId) {
-          io.to(`visitor:${session.visitorId}`).emit('message:new', { message });
-        }
       } catch (error) {
         console.error('Admin message error:', error);
         socket.emit('error', { message: '发送消息失败' });
@@ -205,10 +197,11 @@ export const setupSocket = (expressServer: Express): { io: SocketIOServer; httpS
         
         const session = await SessionModel.findById(sessionId);
         
-        io.to(`session:${sessionId}`).emit('session:ended', { sessionId });
-        
         if (session?.visitorId) {
           io.to(`visitor:${session.visitorId}`).emit('session:ended', { sessionId });
+        }
+        if (session?.adminId) {
+          io.to(`admin:${session.adminId}`).emit('session:ended', { sessionId });
         }
       } catch (error) {
         console.error('Admin end error:', error);

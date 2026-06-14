@@ -41,9 +41,13 @@ export const useChatStore = create<ChatState>((set, get) => ({
   setSession: (session) => set({ session }),
   setMessages: (messages) => set({ messages }),
   addMessage: (message) =>
-    set((state) => ({
-      messages: [...state.messages, message],
-    })),
+    set((state) => {
+      const exists = state.messages.some((m) => m.id === message.id);
+      if (exists) return state;
+      return {
+        messages: [...state.messages, message],
+      };
+    }),
   setQueuePosition: (position) => set({ queuePosition: position }),
   setSessionStatus: (status) => set({ sessionStatus: status }),
   setAssignedAdmin: (admin) => set({ assignedAdmin: admin }),

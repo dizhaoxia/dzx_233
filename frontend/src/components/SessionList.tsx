@@ -1,7 +1,7 @@
-import React, { useEffect } from 'react';
-import { User, Clock, MessageCircle } from 'lucide-react';
+import React, { useEffect, useRef, useCallback } from 'react';
+import { User, MessageCircle } from 'lucide-react';
 import { useAdminStore } from '../store/adminStore';
-import { sessionAPI } from '../services/api';
+import { sessionAPI, messageAPI } from '../services/api';
 import { emit, on } from '../services/socket';
 import { formatTime, truncateText, getStatusText } from '../utils/format';
 import type { Session, Message } from '../types';
@@ -11,30 +11,64 @@ interface SessionListProps {
 }
 
 const SessionList: React.FC<SessionListProps> = ({ onSelectSession }) => {
-  const {
-    sessions,
-    activeSessionId,
-    setSessions,
-    addSession,
-    updateSession,
-    removeSession,
-    setActiveSessionMessages,
-    setActiveSessionId,
-    setVisitorHistory,
-    searchVisitorId,
-  } = useAdminStore();
+  const sessions = useAdminStore((state) => state.sessions);
+  const activeSessionId = useAdminStore((state) => state.activeSessionId);
+  const searchVisitorId = useAdminStore((state) => state.searchVisitorId);
+  const visitorHistory = useAdminStore((state) => state.visitorHistory);
 
-  useEffect(() => {
-    loadSessions();
+  const initializedRef = useRef(false);
+  const loadedRef = useRef(false);
+
+  const updateSessionListWithMessage = useCallback((message: Message) => {
+    const store = useAdminStore.getState();
+    const currentActiveSessionId = store.activeSessionId;
+    
+    store.setSessions((prev) =>
+      prev.map((s) => {
+        if (s.id !== message.sessionId) return s;
+        
+        const isDuplicate = s.lastMessage?.id === message.id;
+        if (isDuplicate) return s;
+        
+        const isCurrentSession = s.id === currentActiveSessionId;
+        const shouldIncrementUnread = !isCurrentSession && message.senderType === 'visitor';
+        
+        return {
+          ...s,
+          lastMessage: message,
+          unreadCount: shouldIncrementUnread
+            ? (s.unreadCount || 0) + 1
+            : isCurrentSession
+              ? 0
+              : s.unreadCount,
+        };
+      }).sort((a, b) => {
+        const aTime = a.lastMessage?.createdAt || a.createdAt;
+        const bTime = b.lastMessage?.createdAt || b.createdAt;
+        return new Date(bTime).getTime() - new Date(aTime).getTime();
+      })
+    );
   }, []);
 
   useEffect(() => {
+    if (!loadedRef.current) {
+      loadedRef.current = true;
+      loadSessions();
+    }
+  }, []);
+
+  useEffect(() => {
+    if (initializedRef.current) return;
+    initializedRef.current = true;
+
+    const store = useAdminStore.getState();
+
     const handleSessionNew = ({ session }: { session: Session }) => {
-      addSession(session);
+      store.addSession(session);
     };
 
     const handleSessionEnded = ({ sessionId }: { sessionId: number }) => {
-      removeSession(sessionId);
+      store.removeSession(sessionId);
     };
 
     const handleMessageNew = ({ message }: { message: Message }) => {
@@ -50,21 +84,23 @@ const SessionList: React.FC<SessionListProps> = ({ onSelectSession }) => {
       unsubEnded();
       unsubMessage();
     };
-  }, [addSession, removeSession]);
+  }, [updateSessionListWithMessage]);
 
   useEffect(() => {
     if (searchVisitorId.trim()) {
       searchVisitorHistory(searchVisitorId.trim());
     } else {
-      setVisitorHistory([]);
+      const store = useAdminStore.getState();
+      store.setVisitorHistory([]);
       loadSessions();
     }
   }, [searchVisitorId]);
 
   const loadSessions = async () => {
     try {
+      const store = useAdminStore.getState();
       const data = await sessionAPI.getSessions();
-      setSessions(data);
+      store.setSessions(data);
     } catch (error) {
       console.error('Failed to load sessions:', error);
     }
@@ -72,46 +108,33 @@ const SessionList: React.FC<SessionListProps> = ({ onSelectSession }) => {
 
   const searchVisitorHistory = async (visitorId: string) => {
     try {
+      const store = useAdminStore.getState();
       const data = await sessionAPI.getVisitorHistory(visitorId);
-      setVisitorHistory(data);
+      store.setVisitorHistory(data);
     } catch (error) {
       console.error('Failed to search visitor history:', error);
     }
   };
 
-  const updateSessionListWithMessage = (message: Message) => {
-    setSessions((prev) =>
-      prev.map((s) =>
-        s.id === message.sessionId
-          ? {
-              ...s,
-              lastMessage: message,
-              unreadCount: message.senderType === 'visitor' ? (s.unreadCount || 0) + 1 : s.unreadCount,
-            }
-          : s
-      ).sort((a, b) => {
-        const aTime = a.lastMessage?.createdAt || a.createdAt;
-        const bTime = b.lastMessage?.createdAt || b.createdAt;
-        return new Date(bTime).getTime() - new Date(aTime).getTime();
-      })
-    );
-  };
-
   const handleSelectSession = async (session: Session) => {
     onSelectSession(session);
-    setActiveSessionId(session.id);
+    const store = useAdminStore.getState();
+    store.setActiveSessionId(session.id);
+    store.markSessionAsRead(session.id);
     emit('admin:join', { sessionId: session.id });
+    emit('message:read', { sessionId: session.id, senderType: 'visitor' });
+    messageAPI.markAsRead(session.id, 'visitor').catch(console.error);
 
     try {
       const data = await sessionAPI.getSession(session.id);
-      setActiveSessionMessages(data.messages);
+      store.setActiveSessionMessages(data.messages);
     } catch (error) {
       console.error('Failed to load session messages:', error);
     }
   };
 
   const displaySessions = searchVisitorId.trim()
-    ? useAdminStore.getState().visitorHistory.map((h) => h.session)
+    ? visitorHistory.map((h) => h.session)
     : sessions;
 
   return (
@@ -170,7 +193,7 @@ const SessionList: React.FC<SessionListProps> = ({ onSelectSession }) => {
                     <span className={`status-badge status-${session.status}`}>
                       {getStatusText(session.status)}
                     </span>
-                    {session.unreadCount && session.unreadCount > 0 && (
+                    {activeSessionId !== session.id && session.unreadCount && session.unreadCount > 0 && (
                       <span className="bg-red-500 text-white text-xs rounded-full px-1.5 py-0.5 min-w-[20px] text-center">
                         {session.unreadCount > 99 ? '99+' : session.unreadCount}
                       </span>

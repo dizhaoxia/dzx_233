@@ -1,1 +1,1 @@
-{"/_error":"pages/_error.js","/_app":"pages/_app.js","/_document":"pages/_document.js","/admin/login":"pages/admin/login.html","/admin/dashboard":"pages/admin/dashboard.html","/":"pages/index.html","/404":"pages/404.html"}
+{"/_app":"pages/_app.js","/_error":"pages/_error.js","/admin/login":"pages/admin/login.html","/":"pages/index.html","/_document":"pages/_document.js","/admin/dashboard":"pages/admin/dashboard.html","/404":"pages/404.html"}
