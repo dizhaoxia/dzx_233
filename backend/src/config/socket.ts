@@ -7,7 +7,7 @@ import * as AdminModel from '../models/Admin.js';
 import * as RatingModel from '../models/Rating.js';
 import { assignSession, processWaitingSessions } from '../services/assignmentService.js';
 import { addToQueue, removeFromQueue, getQueuePosition, syncQueueFromDB } from '../services/queueService.js';
-import type { SocketData, AdminStatus, SenderType, RatingScore, Rating } from '../types/index.js';
+import type { SocketData, AdminStatus, SenderType, RatingScore, Rating, TicketWithDetails } from '../types/index.js';
 
 interface ServerToClientEvents {
   'session:queued': (data: { position: number }) => void;
@@ -22,6 +22,9 @@ interface ServerToClientEvents {
   'typing': (data: { sessionId: number; sender: string }) => void;
   'rating:request': (data: { sessionId: number }) => void;
   'rating:submitted': (data: { rating: Rating }) => void;
+  'ticket:created': (data: { ticket: TicketWithDetails }) => void;
+  'ticket:updated': (data: { ticket: TicketWithDetails }) => void;
+  'ticket:assigned': (data: { ticket: TicketWithDetails }) => void;
   'error': (data: { message: string }) => void;
 }
 
@@ -39,6 +42,9 @@ interface ClientToServerEvents {
   'message:read': (data: { sessionId: number; senderType: SenderType }) => void;
   'queue:refresh': (data: { sessionId: number }) => void;
   'rating:submit': (data: { sessionId: number; visitorId: string; score: RatingScore; feedback?: string }) => void;
+  'ticket:created': (data: { ticket: TicketWithDetails }) => void;
+  'ticket:updated': (data: { ticket: TicketWithDetails }) => void;
+  'ticket:assigned': (data: { ticket: TicketWithDetails }) => void;
 }
 
 export const setupSocket = (expressServer: Express): { io: SocketIOServer; httpServer: any } => {
@@ -278,6 +284,48 @@ export const setupSocket = (expressServer: Express): { io: SocketIOServer; httpS
       } catch (error) {
         console.error('Rating submit error:', error);
         socket.emit('error', { message: '提交评价失败' });
+      }
+    });
+
+    socket.on('ticket:created', async (data) => {
+      try {
+        const { ticket } = data;
+        io.emit('ticket:created', { ticket });
+        
+        if (ticket.adminId) {
+          io.to(`admin:${ticket.adminId}`).emit('ticket:assigned', { ticket });
+        }
+      } catch (error) {
+        console.error('Ticket created broadcast error:', error);
+      }
+    });
+
+    socket.on('ticket:updated', async (data) => {
+      try {
+        const { ticket } = data;
+        io.emit('ticket:updated', { ticket });
+        
+        if (ticket.visitorId) {
+          io.to(`visitor:${ticket.visitorId}`).emit('ticket:updated', { ticket });
+        }
+      } catch (error) {
+        console.error('Ticket updated broadcast error:', error);
+      }
+    });
+
+    socket.on('ticket:assigned', async (data) => {
+      try {
+        const { ticket } = data;
+        io.emit('ticket:assigned', { ticket });
+        
+        if (ticket.adminId) {
+          io.to(`admin:${ticket.adminId}`).emit('ticket:assigned', { ticket });
+        }
+        if (ticket.visitorId) {
+          io.to(`visitor:${ticket.visitorId}`).emit('ticket:updated', { ticket });
+        }
+      } catch (error) {
+        console.error('Ticket assigned broadcast error:', error);
       }
     });
 

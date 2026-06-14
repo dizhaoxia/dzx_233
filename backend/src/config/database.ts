@@ -116,11 +116,47 @@ const initTables = async () => {
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
     `);
 
+    await connection.execute(`
+      CREATE TABLE IF NOT EXISTS tickets (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        title VARCHAR(255) NOT NULL,
+        description TEXT NULL,
+        category ENUM('technical', 'billing', 'product', 'account', 'other') DEFAULT 'other',
+        priority ENUM('low', 'medium', 'high', 'urgent') DEFAULT 'medium',
+        status ENUM('pending', 'processing', 'resolved', 'closed') DEFAULT 'pending',
+        visitor_id VARCHAR(100) NOT NULL,
+        session_id INT NULL,
+        admin_id INT NULL,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        resolved_at DATETIME NULL,
+        closed_at DATETIME NULL,
+        INDEX idx_visitor_id (visitor_id),
+        INDEX idx_admin_id (admin_id),
+        INDEX idx_status (status),
+        INDEX idx_priority (priority),
+        INDEX idx_category (category),
+        INDEX idx_created_at (created_at),
+        FOREIGN KEY (session_id) REFERENCES sessions(id) ON DELETE SET NULL,
+        FOREIGN KEY (admin_id) REFERENCES admins(id) ON DELETE SET NULL
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+    `);
+
     const hashedPassword = bcrypt.hashSync('123456', 10);
-    await connection.execute(
-      'INSERT IGNORE INTO admins (username, password) VALUES (?, ?)',
-      ['admin', hashedPassword]
-    );
+    const adminAccounts = [
+      ['admin', hashedPassword],
+      ['kefu1', hashedPassword],
+      ['kefu2', hashedPassword],
+      ['kefu3', hashedPassword],
+      ['kefu4', hashedPassword],
+      ['kefu5', hashedPassword],
+    ];
+    for (const [username, password] of adminAccounts) {
+      await connection.execute(
+        'INSERT IGNORE INTO admins (username, password) VALUES (?, ?)',
+        [username, password]
+      );
+    }
 
     console.log('Database initialized successfully');
   } catch (error) {

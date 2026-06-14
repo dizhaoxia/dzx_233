@@ -10,6 +10,12 @@ import type {
   Rating,
   AdminRatingStats,
   QuickReplyCategory,
+  Ticket,
+  TicketWithDetails,
+  TicketStatus,
+  TicketPriority,
+  TicketCategory,
+  AdminForAssign,
 } from '../types';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3202';
@@ -156,6 +162,71 @@ export const ratingAPI = {
   getAdminStats: async (startDate?: string, endDate?: string): Promise<AdminRatingStats> => {
     const params = { startDate, endDate };
     const response = await api.get('/api/ratings/stats', { params });
+    return response.data;
+  },
+};
+
+export const ticketAPI = {
+  createTicket: async (data: {
+    title: string;
+    description?: string;
+    category: TicketCategory;
+    priority: TicketPriority;
+    visitorId: string;
+    sessionId?: number;
+  }): Promise<Ticket> => {
+    const response = await api.post('/api/tickets', data);
+    return response.data;
+  },
+
+  getTicket: async (id: number): Promise<TicketWithDetails> => {
+    const response = await api.get(`/api/tickets/${id}`);
+    return response.data;
+  },
+
+  getMyTickets: async (status?: TicketStatus): Promise<TicketWithDetails[]> => {
+    const params = status ? { status } : {};
+    const response = await api.get('/api/tickets/my', { params });
+    return response.data;
+  },
+
+  getAllTickets: async (filters?: {
+    status?: TicketStatus;
+    priority?: TicketPriority;
+    category?: TicketCategory;
+  }): Promise<TicketWithDetails[]> => {
+    const response = await api.get('/api/tickets/all', { params: filters });
+    return response.data;
+  },
+
+  getVisitorTickets: async (visitorId: string, includeClosed?: boolean): Promise<TicketWithDetails[]> => {
+    const params = includeClosed ? { includeClosed: 'true' } : {};
+    const response = await api.get(`/api/tickets/visitor/${visitorId}`, { params });
+    return response.data;
+  },
+
+  updateTicketStatus: async (id: number, status: TicketStatus): Promise<{ message: string; ticket: TicketWithDetails }> => {
+    const response = await api.put(`/api/tickets/${id}/status`, { status });
+    return response.data;
+  },
+
+  assignTicket: async (id: number, adminId: number | null): Promise<{ message: string; ticket: TicketWithDetails }> => {
+    const response = await api.put(`/api/tickets/${id}/assign`, { adminId });
+    return response.data;
+  },
+
+  updateTicket: async (id: number, data: {
+    title?: string;
+    description?: string;
+    category?: TicketCategory;
+    priority?: TicketPriority;
+  }): Promise<{ message: string; ticket: TicketWithDetails }> => {
+    const response = await api.put(`/api/tickets/${id}`, data);
+    return response.data;
+  },
+
+  getAdmins: async (): Promise<AdminForAssign[]> => {
+    const response = await api.get('/api/tickets/admins');
     return response.data;
   },
 };

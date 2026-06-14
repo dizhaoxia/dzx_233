@@ -1,11 +1,12 @@
 import React, { useEffect, useRef, useCallback, useState } from 'react';
-import { X, User, Clock, MessageCircle, PhoneOff } from 'lucide-react';
+import { X, User, Clock, MessageCircle, PhoneOff, FileText, Tag, AlertTriangle } from 'lucide-react';
 import { useChatStore } from '../store/chatStore';
 import { emit, on, getSocket } from '../services/socket';
 import MessageBubble from './MessageBubble';
 import ChatInput from './ChatInput';
 import RatingCard from './RatingCard';
-import { getStatusText } from '../utils/format';
+import VisitorTicketList from './VisitorTicketList';
+import { getStatusText, getTicketStatusText, getTicketStatusColor, getTicketPriorityText, getTicketPriorityColor, getTicketCategoryText } from '../utils/format';
 import type { RatingScore } from '../types';
 
 const VisitorChat: React.FC = () => {
@@ -19,6 +20,10 @@ const VisitorChat: React.FC = () => {
   const pendingRatingSessionId = useChatStore((state) => state.pendingRatingSessionId);
   const startNewChat = useChatStore((state) => state.startNewChat);
   const setSessionStatus = useChatStore((state) => state.setSessionStatus);
+  const showTicketList = useChatStore((state) => state.showTicketList);
+  const setShowTicketList = useChatStore((state) => state.setShowTicketList);
+  const selectedTicket = useChatStore((state) => state.selectedTicket);
+  const setSelectedTicket = useChatStore((state) => state.setSelectedTicket);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [currentVisitorId, setCurrentVisitorId] = useState<string | null>(visitorId);
@@ -175,17 +180,65 @@ const VisitorChat: React.FC = () => {
             )}
           </div>
         </div>
-        {sessionStatus === 'active' && (
+        <div className="flex items-center gap-2">
           <button
-            onClick={handleEndSession}
+            onClick={() => setShowTicketList(true)}
             className="flex items-center gap-1.5 px-3 py-1.5 bg-white/20 hover:bg-white/30 rounded-lg transition-colors text-sm"
-            title="结束会话"
+            title="我的工单"
           >
-            <PhoneOff size={16} />
-            结束会话
+            <FileText size={16} />
+            我的工单
           </button>
-        )}
+          {sessionStatus === 'active' && (
+            <button
+              onClick={handleEndSession}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-white/20 hover:bg-white/30 rounded-lg transition-colors text-sm"
+              title="结束会话"
+            >
+              <PhoneOff size={16} />
+              结束会话
+            </button>
+          )}
+        </div>
       </div>
+
+      {selectedTicket && (
+        <div className="bg-blue-50 border-b border-blue-200 px-4 py-3">
+          <div className="flex items-center justify-between">
+            <div className="flex-1">
+              <div className="flex items-center gap-2 mb-1">
+                <span className="text-sm font-medium text-blue-800">关联工单: #{selectedTicket.id}</span>
+                <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${getTicketStatusColor(selectedTicket.status)}`}>
+                  {getTicketStatusText(selectedTicket.status)}
+                </span>
+                <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${getTicketPriorityColor(selectedTicket.priority)}`}>
+                  {getTicketPriorityText(selectedTicket.priority)}
+                </span>
+              </div>
+              <p className="text-sm text-blue-700 font-medium">{selectedTicket.title}</p>
+              <div className="flex items-center gap-4 mt-1 text-xs text-blue-600">
+                <span className="flex items-center gap-1">
+                  <Tag size={12} />
+                  {getTicketCategoryText(selectedTicket.category)}
+                </span>
+                {selectedTicket.admin && (
+                  <span className="flex items-center gap-1">
+                    <User size={12} />
+                    处理客服: {selectedTicket.admin.username}
+                  </span>
+                )}
+              </div>
+            </div>
+            <button
+              onClick={() => setSelectedTicket(null)}
+              className="p-1.5 hover:bg-blue-100 rounded-lg transition-colors"
+              title="取消关联"
+            >
+              <X size={16} className="text-blue-600" />
+            </button>
+          </div>
+        </div>
+      )}
 
       {sessionStatus === 'waiting' && (
         <div className="flex-1 flex items-center justify-center bg-gray-50">
@@ -239,6 +292,10 @@ const VisitorChat: React.FC = () => {
             />
           )}
         </>
+      )}
+
+      {showTicketList && (
+        <VisitorTicketList onClose={() => setShowTicketList(false)} />
       )}
     </div>
   );

@@ -8,6 +8,12 @@ export type QuickReplyCategory = 'greeting' | 'faq' | 'closing' | 'custom';
 
 export type RatingScore = 'satisfied' | 'neutral' | 'dissatisfied';
 
+export type TicketStatus = 'pending' | 'processing' | 'resolved' | 'closed';
+
+export type TicketPriority = 'low' | 'medium' | 'high' | 'urgent';
+
+export type TicketCategory = 'technical' | 'billing' | 'product' | 'account' | 'other';
+
 export interface Admin {
   id: number;
   username: string;
@@ -75,6 +81,27 @@ export interface AdminRatingStats {
   neutralCount: number;
   dissatisfiedCount: number;
   satisfactionRate: number;
+}
+
+export interface Ticket {
+  id: number;
+  title: string;
+  description: string;
+  category: TicketCategory;
+  priority: TicketPriority;
+  status: TicketStatus;
+  visitorId: string;
+  sessionId: number | null;
+  adminId: number | null;
+  createdAt: Date;
+  updatedAt: Date;
+  resolvedAt: Date | null;
+  closedAt: Date | null;
+}
+
+export interface TicketWithDetails extends Ticket {
+  admin?: { id: number; username: string };
+  session?: { id: number; status: SessionStatus };
 }
 
 export interface SocketData {

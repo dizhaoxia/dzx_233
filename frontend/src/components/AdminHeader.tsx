@@ -1,6 +1,6 @@
 import React from 'react';
 import { useRouter } from 'next/router';
-import { LogOut, User, Search, MessageSquare, Zap, BarChart3 } from 'lucide-react';
+import { LogOut, User, Search, MessageSquare, Zap, BarChart3, FileText } from 'lucide-react';
 import { useAuthStore } from '../store/authStore';
 import { useAdminStore } from '../store/adminStore';
 import { authAPI } from '../services/api';
@@ -17,7 +17,7 @@ const statusOptions: { value: AdminStatus; label: string; color: string }[] = [
 const AdminHeader: React.FC = () => {
   const router = useRouter();
   const { admin, logout, updateStatus } = useAuthStore();
-  const { setSearchVisitorId, resetAdminStore, showQuickReplyPanel, showStatsPanel, setShowQuickReplyPanel, setShowStatsPanel } = useAdminStore();
+  const { setSearchVisitorId, resetAdminStore, showQuickReplyPanel, showStatsPanel, setShowQuickReplyPanel, setShowStatsPanel, currentView, setCurrentView } = useAdminStore();
 
   const handleStatusChange = async (status: AdminStatus) => {
     try {
@@ -64,6 +64,31 @@ const AdminHeader: React.FC = () => {
       </div>
 
       <div className="flex items-center gap-4">
+        <div className="flex bg-gray-100 rounded-lg p-1">
+          <button
+            onClick={() => setCurrentView('chat')}
+            className={`flex items-center gap-1.5 px-4 py-1.5 rounded-md text-sm font-medium transition-colors ${
+              currentView === 'chat'
+                ? 'bg-white text-primary-600 shadow-sm'
+                : 'text-gray-600 hover:text-gray-800'
+            }`}
+          >
+            <MessageSquare size={16} />
+            聊天
+          </button>
+          <button
+            onClick={() => setCurrentView('tickets')}
+            className={`flex items-center gap-1.5 px-4 py-1.5 rounded-md text-sm font-medium transition-colors ${
+              currentView === 'tickets'
+                ? 'bg-white text-primary-600 shadow-sm'
+                : 'text-gray-600 hover:text-gray-800'
+            }`}
+          >
+            <FileText size={16} />
+            工单
+          </button>
+        </div>
+
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
           <input

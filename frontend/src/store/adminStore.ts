@@ -1,5 +1,7 @@
 import { create } from 'zustand';
-import type { Session, Message, VisitorHistory, QuickReply, Rating, AdminRatingStats } from '../types';
+import type { Session, Message, VisitorHistory, QuickReply, Rating, AdminRatingStats, TicketWithDetails, AdminForAssign } from '../types';
+
+type AdminView = 'chat' | 'tickets';
 
 interface AdminState {
   sessions: Session[];
@@ -12,6 +14,21 @@ interface AdminState {
   ratingStats: AdminRatingStats | null;
   showQuickReplyPanel: boolean;
   showStatsPanel: boolean;
+  currentView: AdminView;
+  tickets: TicketWithDetails[];
+  selectedTicketId: number | null;
+  showCreateTicketModal: boolean;
+  showTicketDetailModal: boolean;
+  adminsForAssign: AdminForAssign[];
+  setCurrentView: (view: AdminView) => void;
+  setTickets: (tickets: TicketWithDetails[]) => void;
+  addTicket: (ticket: TicketWithDetails) => void;
+  updateTicket: (ticket: TicketWithDetails) => void;
+  removeTicket: (ticketId: number) => void;
+  setSelectedTicketId: (id: number | null) => void;
+  setShowCreateTicketModal: (show: boolean) => void;
+  setShowTicketDetailModal: (show: boolean) => void;
+  setAdminsForAssign: (admins: AdminForAssign[]) => void;
   setSessions: (sessions: Session[] | ((prev: Session[]) => Session[])) => void;
   addSession: (session: Session) => void;
   updateSession: (session: Session) => void;
@@ -45,6 +62,37 @@ export const useAdminStore = create<AdminState>((set) => ({
   ratingStats: null,
   showQuickReplyPanel: false,
   showStatsPanel: false,
+  currentView: 'chat',
+  tickets: [],
+  selectedTicketId: null,
+  showCreateTicketModal: false,
+  showTicketDetailModal: false,
+  adminsForAssign: [],
+  setCurrentView: (view) => set({ currentView: view }),
+  setTickets: (tickets) => set({ tickets }),
+  addTicket: (ticket) =>
+    set((state) => {
+      const exists = state.tickets.some((t) => t.id === ticket.id);
+      if (exists) {
+        return {
+          tickets: state.tickets.map((t) => (t.id === ticket.id ? ticket : t)),
+        };
+      }
+      return { tickets: [ticket, ...state.tickets] };
+    }),
+  updateTicket: (ticket) =>
+    set((state) => ({
+      tickets: state.tickets.map((t) => (t.id === ticket.id ? ticket : t)),
+    })),
+  removeTicket: (ticketId) =>
+    set((state) => ({
+      tickets: state.tickets.filter((t) => t.id !== ticketId),
+      selectedTicketId: state.selectedTicketId === ticketId ? null : state.selectedTicketId,
+    })),
+  setSelectedTicketId: (id) => set({ selectedTicketId: id }),
+  setShowCreateTicketModal: (show) => set({ showCreateTicketModal: show }),
+  setShowTicketDetailModal: (show) => set({ showTicketDetailModal: show }),
+  setAdminsForAssign: (admins) => set({ adminsForAssign: admins }),
   setSessions: (sessions) =>
     set((state) => ({
       sessions: typeof sessions === 'function' ? sessions(state.sessions) : sessions,
@@ -125,5 +173,11 @@ export const useAdminStore = create<AdminState>((set) => ({
       ratingStats: null,
       showQuickReplyPanel: false,
       showStatsPanel: false,
+      currentView: 'chat',
+      tickets: [],
+      selectedTicketId: null,
+      showCreateTicketModal: false,
+      showTicketDetailModal: false,
+      adminsForAssign: [],
     }),
 }));

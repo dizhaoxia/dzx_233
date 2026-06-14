@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { Session, Message, Admin, SessionStatus, Rating, RatingScore } from '../types';
+import type { Session, Message, Admin, SessionStatus, Rating, RatingScore, TicketWithDetails } from '../types';
 
 interface ChatState {
   visitorId: string | null;
@@ -12,6 +12,9 @@ interface ChatState {
   showRatingCard: boolean;
   pendingRatingSessionId: number | null;
   currentRating: Rating | null;
+  visitorTickets: TicketWithDetails[];
+  selectedTicket: TicketWithDetails | null;
+  showTicketList: boolean;
   setVisitorId: (visitorId: string) => void;
   setSession: (session: Session | null) => void;
   setMessages: (messages: Message[]) => void;
@@ -24,8 +27,12 @@ interface ChatState {
   setShowRatingCard: (show: boolean) => void;
   setPendingRatingSessionId: (sessionId: number | null) => void;
   setCurrentRating: (rating: Rating | null) => void;
+  setVisitorTickets: (tickets: TicketWithDetails[]) => void;
+  setSelectedTicket: (ticket: TicketWithDetails | null) => void;
+  setShowTicketList: (show: boolean) => void;
   resetChat: () => void;
   startNewChat: () => string;
+  continueWithTicket: (ticket: TicketWithDetails) => void;
 }
 
 const generateVisitorId = (): string => {
@@ -49,6 +56,9 @@ export const useChatStore = create<ChatState>((set, get) => ({
   showRatingCard: false,
   pendingRatingSessionId: null,
   currentRating: null,
+  visitorTickets: [],
+  selectedTicket: null,
+  showTicketList: false,
   setVisitorId: (visitorId) => set({ visitorId }),
   setSession: (session) => set({ session }),
   setMessages: (messages) => set({ messages }),
@@ -71,6 +81,9 @@ export const useChatStore = create<ChatState>((set, get) => ({
   setShowRatingCard: (show) => set({ showRatingCard: show }),
   setPendingRatingSessionId: (sessionId) => set({ pendingRatingSessionId: sessionId }),
   setCurrentRating: (rating) => set({ currentRating: rating }),
+  setVisitorTickets: (tickets) => set({ visitorTickets: tickets }),
+  setSelectedTicket: (ticket) => set({ selectedTicket: ticket }),
+  setShowTicketList: (show) => set({ showTicketList: show }),
   resetChat: () =>
     set({
       session: null,
@@ -82,6 +95,8 @@ export const useChatStore = create<ChatState>((set, get) => ({
       showRatingCard: false,
       pendingRatingSessionId: null,
       currentRating: null,
+      selectedTicket: null,
+      showTicketList: false,
     }),
   startNewChat: () => {
     const newVisitorId = generateVisitorId();
@@ -96,7 +111,16 @@ export const useChatStore = create<ChatState>((set, get) => ({
       showRatingCard: false,
       pendingRatingSessionId: null,
       currentRating: null,
+      visitorTickets: [],
+      selectedTicket: null,
+      showTicketList: false,
     });
     return newVisitorId;
+  },
+  continueWithTicket: (ticket) => {
+    set({
+      selectedTicket: ticket,
+      showTicketList: false,
+    });
   },
 }));

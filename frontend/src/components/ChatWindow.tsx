@@ -1,11 +1,12 @@
 import React, { useEffect, useRef, useCallback, useState } from 'react';
-import { User, X, MessageCircle } from 'lucide-react';
+import { User, X, MessageCircle, FileText } from 'lucide-react';
 import { useAdminStore } from '../store/adminStore';
 import { emit, on } from '../services/socket';
 import { messageAPI } from '../services/api';
 import MessageBubble from './MessageBubble';
 import ChatInput, { ChatInputHandle } from './ChatInput';
 import QuickReplyPanel from './QuickReplyPanel';
+import CreateTicketModal from './CreateTicketModal';
 import type { Session, Message } from '../types';
 import { formatTime, getStatusText } from '../utils/format';
 
@@ -18,6 +19,8 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ session }) => {
   const activeSessionId = useAdminStore((state) => state.activeSessionId);
   const showQuickReplyPanel = useAdminStore((state) => state.showQuickReplyPanel);
   const setShowQuickReplyPanel = useAdminStore((state) => state.setShowQuickReplyPanel);
+  const showCreateTicketModal = useAdminStore((state) => state.showCreateTicketModal);
+  const setShowCreateTicketModal = useAdminStore((state) => state.setShowCreateTicketModal);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const initializedRef = useRef(false);
@@ -94,6 +97,10 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ session }) => {
     chatInputRef.current?.insertText(content);
   };
 
+  const handleCreateTicket = () => {
+    setShowCreateTicketModal(true);
+  };
+
   if (!session) {
     return (
       <div className="flex-1 flex items-center justify-center bg-gray-50">
@@ -107,14 +114,15 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ session }) => {
   }
 
   return (
-    <div className="flex-1 flex overflow-hidden">
-      <div className="flex-1 flex flex-col bg-gray-50 min-w-0">
-        <div className="bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-primary-100 rounded-full flex items-center justify-center">
-              <User size={20} className="text-primary-500" />
-            </div>
-            <div>
+    <>
+      <div className="flex-1 flex overflow-hidden">
+        <div className="flex-1 flex flex-col bg-gray-50 min-w-0">
+          <div className="bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-primary-100 rounded-full flex items-center justify-center">
+                <User size={20} className="text-primary-500" />
+              </div>
+              <div>
               <h2 className="font-semibold text-gray-800">{session.visitorId}</h2>
               <p className="text-sm text-gray-500 flex items-center gap-2">
                 <span className={`status-badge status-${session.status}`}>
@@ -127,13 +135,22 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ session }) => {
             </div>
           </div>
           {session.status === 'active' && (
-            <button
-              onClick={handleEndSession}
-              className="btn-danger flex items-center gap-2 text-sm"
-            >
-              <X size={16} />
-              结束会话
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={handleCreateTicket}
+                className="flex items-center gap-2 px-3 py-1.5 bg-primary-100 text-primary-700 hover:bg-primary-200 rounded-lg transition-colors text-sm"
+              >
+                <FileText size={16} />
+                转工单
+              </button>
+              <button
+                onClick={handleEndSession}
+                className="btn-danger flex items-center gap-2 text-sm"
+              >
+                <X size={16} />
+                结束会话
+              </button>
+            </div>
           )}
         </div>
 
@@ -182,6 +199,18 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ session }) => {
         </div>
       )}
     </div>
+
+      {showCreateTicketModal && session && (
+        <CreateTicketModal
+          sessionId={session.id}
+          visitorId={session.visitorId}
+          defaultTitle={activeSessionMessages.length > 0 
+            ? activeSessionMessages[activeSessionMessages.length - 1].content.substring(0, 50)
+            : ''
+          }
+        />
+      )}
+    </>
   );
 };
 

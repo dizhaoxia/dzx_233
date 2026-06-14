@@ -8,6 +8,12 @@ export type QuickReplyCategory = 'greeting' | 'faq' | 'closing' | 'custom';
 
 export type RatingScore = 'satisfied' | 'neutral' | 'dissatisfied';
 
+export type TicketStatus = 'pending' | 'processing' | 'resolved' | 'closed';
+
+export type TicketPriority = 'low' | 'medium' | 'high' | 'urgent';
+
+export type TicketCategory = 'technical' | 'billing' | 'product' | 'account' | 'other';
+
 export interface Admin {
   id: number;
   username: string;
@@ -82,6 +88,33 @@ export interface VisitorHistory {
   messages: Message[];
 }
 
+export interface Ticket {
+  id: number;
+  title: string;
+  description: string;
+  category: TicketCategory;
+  priority: TicketPriority;
+  status: TicketStatus;
+  visitorId: string;
+  sessionId: number | null;
+  adminId: number | null;
+  createdAt: string;
+  updatedAt: string;
+  resolvedAt: string | null;
+  closedAt: string | null;
+}
+
+export interface TicketWithDetails extends Ticket {
+  admin?: { id: number; username: string };
+  session?: { id: number; status: SessionStatus };
+}
+
+export interface AdminForAssign {
+  id: number;
+  username: string;
+  status: AdminStatus;
+}
+
 export interface QueuePosition {
   position: number;
 }
@@ -108,5 +141,8 @@ export interface SocketEvents {
   'rating:request': { sessionId: number };
   'rating:submitted': { rating: Rating };
   'rating:submit': { sessionId: number; visitorId: string; score: RatingScore; feedback?: string };
+  'ticket:created': { ticket: TicketWithDetails };
+  'ticket:updated': { ticket: TicketWithDetails };
+  'ticket:assigned': { ticket: TicketWithDetails };
   'error': { message: string };
 }

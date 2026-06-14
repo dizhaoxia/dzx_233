@@ -44,3 +44,10 @@ export const updateLastOnline = async (id: number): Promise<void> => {
     [new Date(), id]
   );
 };
+
+export const findAll = async (): Promise<Admin[]> => {
+  const [rows] = await pool().execute(
+    'SELECT * FROM admins ORDER BY created_at ASC'
+  );
+  return (rows as any[]).map(rowToAdmin);
+};

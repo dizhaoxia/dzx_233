@@ -7,12 +7,14 @@ import AdminHeader from '../../components/AdminHeader';
 import SessionList from '../../components/SessionList';
 import ChatWindow from '../../components/ChatWindow';
 import RatingStatsPanel from '../../components/RatingStatsPanel';
-import type { Session, Rating } from '../../types';
+import TicketManagement from '../../components/TicketManagement';
+import TicketDetailModal from '../../components/TicketDetailModal';
+import type { Session, Rating, TicketWithDetails } from '../../types';
 
 const DashboardPage: React.FC = () => {
   const router = useRouter();
   const { isAuthenticated, admin } = useAuthStore();
-  const { activeSessionId, sessions, showStatsPanel, addRating } = useAdminStore();
+  const { activeSessionId, sessions, showStatsPanel, addRating, currentView, addTicket, updateTicket, showTicketDetailModal } = useAdminStore();
   const [selectedSession, setSelectedSession] = useState<Session | null>(null);
 
   useEffect(() => {
@@ -44,9 +46,27 @@ const DashboardPage: React.FC = () => {
       addRating(rating);
     };
 
+    const handleTicketCreated = ({ ticket }: { ticket: TicketWithDetails }) => {
+      addTicket(ticket);
+    };
+
+    const handleTicketUpdated = ({ ticket }: { ticket: TicketWithDetails }) => {
+      updateTicket(ticket);
+    };
+
+    const handleTicketAssigned = ({ ticket }: { ticket: TicketWithDetails }) => {
+      updateTicket(ticket);
+    };
+
     const unsubRating = on('rating:submitted', handleRatingSubmitted);
+    const unsubTicketCreated = on('ticket:created', handleTicketCreated);
+    const unsubTicketUpdated = on('ticket:updated', handleTicketUpdated);
+    const unsubTicketAssigned = on('ticket:assigned', handleTicketAssigned);
     return () => {
       unsubRating();
+      unsubTicketCreated();
+      unsubTicketUpdated();
+      unsubTicketAssigned();
     };
   }, []);
 
@@ -62,14 +82,21 @@ const DashboardPage: React.FC = () => {
     <div className="h-screen flex flex-col bg-gray-100">
       <AdminHeader />
       <div className="flex-1 flex overflow-hidden">
-        <SessionList onSelectSession={setSelectedSession} />
-        <ChatWindow session={selectedSession} />
-        {showStatsPanel && (
-          <div className="w-80 border-l border-gray-200 flex-shrink-0">
-            <RatingStatsPanel />
-          </div>
+        {currentView === 'chat' ? (
+          <>
+            <SessionList onSelectSession={setSelectedSession} />
+            <ChatWindow session={selectedSession} />
+            {showStatsPanel && (
+              <div className="w-80 border-l border-gray-200 flex-shrink-0">
+                <RatingStatsPanel />
+              </div>
+            )}
+          </>
+        ) : (
+          <TicketManagement />
         )}
       </div>
+      {showTicketDetailModal && <TicketDetailModal />}
     </div>
   );
 };
