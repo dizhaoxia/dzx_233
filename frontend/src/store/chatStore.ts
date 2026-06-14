@@ -15,6 +15,7 @@ interface ChatState {
   visitorTickets: TicketWithDetails[];
   selectedTicket: TicketWithDetails | null;
   showTicketList: boolean;
+  ticketNotification: TicketWithDetails | null;
   setVisitorId: (visitorId: string) => void;
   setSession: (session: Session | null) => void;
   setMessages: (messages: Message[]) => void;
@@ -30,6 +31,7 @@ interface ChatState {
   setVisitorTickets: (tickets: TicketWithDetails[]) => void;
   setSelectedTicket: (ticket: TicketWithDetails | null) => void;
   setShowTicketList: (show: boolean) => void;
+  setTicketNotification: (ticket: TicketWithDetails | null) => void;
   resetChat: () => void;
   startNewChat: () => string;
   continueWithTicket: (ticket: TicketWithDetails) => void;
@@ -59,6 +61,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
   visitorTickets: [],
   selectedTicket: null,
   showTicketList: false,
+  ticketNotification: null,
   setVisitorId: (visitorId) => set({ visitorId }),
   setSession: (session) => set({ session }),
   setMessages: (messages) => set({ messages }),
@@ -84,6 +87,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
   setVisitorTickets: (tickets) => set({ visitorTickets: tickets }),
   setSelectedTicket: (ticket) => set({ selectedTicket: ticket }),
   setShowTicketList: (show) => set({ showTicketList: show }),
+  setTicketNotification: (ticket) => set({ ticketNotification: ticket }),
   resetChat: () =>
     set({
       session: null,
@@ -97,6 +101,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
       currentRating: null,
       selectedTicket: null,
       showTicketList: false,
+      ticketNotification: null,
     }),
   startNewChat: () => {
     const newVisitorId = generateVisitorId();
@@ -114,6 +119,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
       visitorTickets: [],
       selectedTicket: null,
       showTicketList: false,
+      ticketNotification: null,
     });
     return newVisitorId;
   },
@@ -121,6 +127,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
     set({
       selectedTicket: ticket,
       showTicketList: false,
+      ticketNotification: null,
     });
   },
 }));

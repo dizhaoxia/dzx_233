@@ -25,6 +25,8 @@ interface ServerToClientEvents {
   'ticket:created': (data: { ticket: TicketWithDetails }) => void;
   'ticket:updated': (data: { ticket: TicketWithDetails }) => void;
   'ticket:assigned': (data: { ticket: TicketWithDetails }) => void;
+  'ticket:created:visitor': (data: { ticket: TicketWithDetails }) => void;
+  'ticket:updated:visitor': (data: { ticket: TicketWithDetails }) => void;
   'error': (data: { message: string }) => void;
 }
 
@@ -295,6 +297,9 @@ export const setupSocket = (expressServer: Express): { io: SocketIOServer; httpS
         if (ticket.adminId) {
           io.to(`admin:${ticket.adminId}`).emit('ticket:assigned', { ticket });
         }
+        if (ticket.visitorId) {
+          io.to(`visitor:${ticket.visitorId}`).emit('ticket:created:visitor', { ticket });
+        }
       } catch (error) {
         console.error('Ticket created broadcast error:', error);
       }
@@ -306,7 +311,7 @@ export const setupSocket = (expressServer: Express): { io: SocketIOServer; httpS
         io.emit('ticket:updated', { ticket });
         
         if (ticket.visitorId) {
-          io.to(`visitor:${ticket.visitorId}`).emit('ticket:updated', { ticket });
+          io.to(`visitor:${ticket.visitorId}`).emit('ticket:updated:visitor', { ticket });
         }
       } catch (error) {
         console.error('Ticket updated broadcast error:', error);
@@ -322,7 +327,7 @@ export const setupSocket = (expressServer: Express): { io: SocketIOServer; httpS
           io.to(`admin:${ticket.adminId}`).emit('ticket:assigned', { ticket });
         }
         if (ticket.visitorId) {
-          io.to(`visitor:${ticket.visitorId}`).emit('ticket:updated', { ticket });
+          io.to(`visitor:${ticket.visitorId}`).emit('ticket:updated:visitor', { ticket });
         }
       } catch (error) {
         console.error('Ticket assigned broadcast error:', error);

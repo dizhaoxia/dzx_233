@@ -205,3 +205,42 @@ export const getAdmins = async (req: AuthRequest, res: Response): Promise<void> 
     res.status(500).json({ error: '获取客服列表失败' });
   }
 };
+
+export const updateTicketPriority = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const { id } = req.params;
+    const { priority } = req.body;
+
+    if (!priority) {
+      res.status(400).json({ error: '缺少优先级参数' });
+      return;
+    }
+
+    const ticket = await TicketModel.findById(parseInt(id));
+    if (!ticket) {
+      res.status(404).json({ error: '工单不存在' });
+      return;
+    }
+
+    await TicketModel.updatePriority(parseInt(id), priority as TicketPriority);
+
+    const updatedTicket = await TicketModel.findByIdWithDetails(parseInt(id));
+    res.json({ message: '优先级更新成功', ticket: updatedTicket });
+  } catch (error) {
+    console.error('Update ticket priority error:', error);
+    res.status(500).json({ error: '更新工单优先级失败' });
+  }
+};
+
+export const getTicketStats = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const { adminId } = req.query;
+    const parsedAdminId = adminId ? parseInt(adminId as string) : undefined;
+
+    const stats = await TicketModel.getStats(parsedAdminId);
+    res.json(stats);
+  } catch (error) {
+    console.error('Get ticket stats error:', error);
+    res.status(500).json({ error: '获取工单统计失败' });
+  }
+};

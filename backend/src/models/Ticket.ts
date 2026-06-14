@@ -207,3 +207,47 @@ export const update = async (id: number, data: {
     params
   );
 };
+
+export const updatePriority = async (id: number, priority: TicketPriority): Promise<void> => {
+  await pool().execute(
+    'UPDATE tickets SET priority = ?, updated_at = ? WHERE id = ?',
+    [priority, new Date(), id]
+  );
+};
+
+export const getStats = async (adminId?: number): Promise<{
+  total: number;
+  pending: number;
+  processing: number;
+  resolved: number;
+  closed: number;
+}> => {
+  let sql = 'SELECT status, COUNT(*) as count FROM tickets WHERE 1=1';
+  const params: any[] = [];
+
+  if (adminId !== undefined) {
+    sql += ' AND admin_id = ?';
+    params.push(adminId);
+  }
+
+  sql += ' GROUP BY status';
+
+  const [rows] = await pool().execute(sql, params);
+  const result = rows as any[];
+
+  const stats = {
+    total: 0,
+    pending: 0,
+    processing: 0,
+    resolved: 0,
+    closed: 0,
+  };
+
+  for (const row of result) {
+    const count = parseInt(row.count);
+    stats[row.status as keyof typeof stats] = count;
+    stats.total += count;
+  }
+
+  return stats;
+};

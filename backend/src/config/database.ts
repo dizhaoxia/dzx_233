@@ -142,6 +142,15 @@ const initTables = async () => {
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
     `);
 
+    const [columns] = await connection.execute('SHOW COLUMNS FROM tickets LIKE "resolved_at"') as any;
+    if (columns.length === 0) {
+      await connection.execute('ALTER TABLE tickets ADD COLUMN resolved_at DATETIME NULL AFTER updated_at');
+    }
+    const [columns2] = await connection.execute('SHOW COLUMNS FROM tickets LIKE "closed_at"') as any;
+    if (columns2.length === 0) {
+      await connection.execute('ALTER TABLE tickets ADD COLUMN closed_at DATETIME NULL AFTER resolved_at');
+    }
+
     const hashedPassword = bcrypt.hashSync('123456', 10);
     const adminAccounts = [
       ['admin', hashedPassword],

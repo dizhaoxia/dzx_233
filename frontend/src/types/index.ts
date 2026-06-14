@@ -144,5 +144,7 @@ export interface SocketEvents {
   'ticket:created': { ticket: TicketWithDetails };
   'ticket:updated': { ticket: TicketWithDetails };
   'ticket:assigned': { ticket: TicketWithDetails };
+  'ticket:created:visitor': { ticket: TicketWithDetails };
+  'ticket:updated:visitor': { ticket: TicketWithDetails };
   'error': { message: string };
 }

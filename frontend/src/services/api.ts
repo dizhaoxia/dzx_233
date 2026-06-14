@@ -210,6 +210,11 @@ export const ticketAPI = {
     return response.data;
   },
 
+  updateTicketPriority: async (id: number, priority: TicketPriority): Promise<{ message: string; ticket: TicketWithDetails }> => {
+    const response = await api.put(`/api/tickets/${id}/priority`, { priority });
+    return response.data;
+  },
+
   assignTicket: async (id: number, adminId: number | null): Promise<{ message: string; ticket: TicketWithDetails }> => {
     const response = await api.put(`/api/tickets/${id}/assign`, { adminId });
     return response.data;
@@ -222,6 +227,18 @@ export const ticketAPI = {
     priority?: TicketPriority;
   }): Promise<{ message: string; ticket: TicketWithDetails }> => {
     const response = await api.put(`/api/tickets/${id}`, data);
+    return response.data;
+  },
+
+  getTicketStats: async (adminId?: number): Promise<{
+    total: number;
+    pending: number;
+    processing: number;
+    resolved: number;
+    closed: number;
+  }> => {
+    const params = adminId !== undefined ? { adminId } : {};
+    const response = await api.get('/api/tickets/stats', { params });
     return response.data;
   },
 

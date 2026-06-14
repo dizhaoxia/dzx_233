@@ -24,6 +24,8 @@ const VisitorChat: React.FC = () => {
   const setShowTicketList = useChatStore((state) => state.setShowTicketList);
   const selectedTicket = useChatStore((state) => state.selectedTicket);
   const setSelectedTicket = useChatStore((state) => state.setSelectedTicket);
+  const ticketNotification = useChatStore((state) => state.ticketNotification);
+  const setTicketNotification = useChatStore((state) => state.setTicketNotification);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [currentVisitorId, setCurrentVisitorId] = useState<string | null>(visitorId);
@@ -100,6 +102,19 @@ const VisitorChat: React.FC = () => {
       console.error('Socket error:', message);
     };
 
+    const handleTicketCreatedVisitor = ({ ticket }: { ticket: any }) => {
+      store.setTicketNotification(ticket);
+      store.setSelectedTicket(ticket);
+    };
+
+    const handleTicketUpdatedVisitor = ({ ticket }: { ticket: any }) => {
+      const currentSelected = store.selectedTicket;
+      if (currentSelected && currentSelected.id === ticket.id) {
+        store.setSelectedTicket(ticket);
+      }
+      store.setTicketNotification(ticket);
+    };
+
     if (socket.connected) {
       handleConnect();
     }
@@ -113,6 +128,8 @@ const VisitorChat: React.FC = () => {
     const unsubRatingRequest = on('rating:request', handleRatingRequest);
     const unsubRatingSubmitted = on('rating:submitted', handleRatingSubmitted);
     const unsubError = on('error', handleError);
+    const unsubTicketCreated = on('ticket:created:visitor', handleTicketCreatedVisitor);
+    const unsubTicketUpdated = on('ticket:updated:visitor', handleTicketUpdatedVisitor);
 
     return () => {
       socket.off('connect', handleConnect);
@@ -124,6 +141,8 @@ const VisitorChat: React.FC = () => {
       unsubRatingRequest();
       unsubRatingSubmitted();
       unsubError();
+      unsubTicketCreated();
+      unsubTicketUpdated();
     };
   }, [currentVisitorId]);
 
@@ -201,6 +220,50 @@ const VisitorChat: React.FC = () => {
           )}
         </div>
       </div>
+
+      {ticketNotification && !selectedTicket && (
+        <div className="bg-amber-50 border-b border-amber-200 px-4 py-3">
+          <div className="flex items-center justify-between">
+            <div className="flex-1">
+              <div className="flex items-center gap-2 mb-1">
+                <FileText size={16} className="text-amber-600" />
+                <span className="text-sm font-medium text-amber-800">客服已为您创建工单 #{ticketNotification.id}</span>
+                <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${getTicketStatusColor(ticketNotification.status)}`}>
+                  {getTicketStatusText(ticketNotification.status)}
+                </span>
+              </div>
+              <p className="text-sm text-amber-700 font-medium">{ticketNotification.title}</p>
+              <div className="flex items-center gap-4 mt-1 text-xs text-amber-600">
+                <span className="flex items-center gap-1">
+                  <Tag size={12} />
+                  {getTicketCategoryText(ticketNotification.category)}
+                </span>
+                <span className="flex items-center gap-1">
+                  <AlertTriangle size={12} />
+                  {getTicketPriorityText(ticketNotification.priority)}
+                </span>
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <button
+                onClick={() => {
+                  setSelectedTicket(ticketNotification);
+                  setTicketNotification(null);
+                }}
+                className="px-3 py-1.5 bg-amber-500 text-white rounded-lg hover:bg-amber-600 transition-colors text-sm"
+              >
+                查看详情
+              </button>
+              <button
+                onClick={() => setTicketNotification(null)}
+                className="p-1.5 hover:bg-amber-100 rounded-lg transition-colors"
+              >
+                <X size={16} className="text-amber-600" />
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {selectedTicket && (
         <div className="bg-blue-50 border-b border-blue-200 px-4 py-3">
